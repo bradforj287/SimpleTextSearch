@@ -2,33 +2,33 @@ package com.bradforj287.SimpleTextSearch.engine;
 
 import com.bradforj287.SimpleTextSearch.Document;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by brad on 6/6/15.
  */
 public class ParsedDocument {
 
-    private List<Term> terms;
+    private ImmutableList<Term> terms;
     private Document document;
-    private Map<String, Integer> wordFrequency;
-    private HashSet<String> uniqueWords;
+    private ImmutableMap<String, Integer> wordFrequencyMap;
+    private ImmutableSet<String> uniqueWords;
 
     public ParsedDocument(List<Term> terms, Document document) {
         Preconditions.checkNotNull(terms);
         Preconditions.checkNotNull(document);
-        this.terms = terms;
+        this.terms = ImmutableList.copyOf(terms);
         this.document = document;
-        wordFrequency = new HashMap<>();
+        HashMap<String, Integer> wordFrequency = new HashMap<>();
         uniqueWords = null;
-        init();
-    }
 
-    private void init() {
         for (Term t : terms) {
             String word = t.getWord();
             if (!wordFrequency.containsKey(word)) {
@@ -40,16 +40,17 @@ public class ParsedDocument {
             wordFrequency.put(word, count + 1);
         }
 
-        //prime unique words
-        getUniqueWords();
+        wordFrequencyMap = ImmutableMap.copyOf(wordFrequency);
+        uniqueWords = ImmutableSet.copyOf(getUniqueWordsHashSet());
     }
 
+
     public int getWordFrequency(String word) {
-        if (!wordFrequency.containsKey(word)) {
+        if (!wordFrequencyMap.containsKey(word)) {
             return 0;
         }
 
-        return wordFrequency.get(word);
+        return wordFrequencyMap.get(word);
     }
 
     public boolean isEmpty() {
@@ -60,16 +61,17 @@ public class ParsedDocument {
         return terms;
     }
 
-    public HashSet<String> getUniqueWords() {
-        if (uniqueWords == null) {
-            HashSet<String> w = new HashSet<>();
-            for (Term t : terms) {
-                w.add(t.getWord());
-            }
-            uniqueWords = w;
-        }
-
+    public Set<String> getUniqueWords() {
         return uniqueWords;
+    }
+
+    private HashSet<String> getUniqueWordsHashSet() {
+
+        HashSet<String> w = new HashSet<>();
+        for (Term t : terms) {
+            w.add(t.getWord());
+        }
+        return w;
     }
 
     public Document getDocument() {

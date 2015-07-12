@@ -1,5 +1,7 @@
 package com.bradforj287.SimpleTextSearch.engine;
 
+import com.google.common.collect.ImmutableMap;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -9,23 +11,24 @@ import java.util.Map;
 public class ParsedDocumentMetrics {
     private Corpus corpus;
     private ParsedDocument document;
-    private Map<String, DocumentPostingCollection> termsToPostings;
+    private ImmutableMap<String, DocumentPostingCollection> termsToPostings;
 
     //metrics
     private Double magnitude;
-    private HashMap<String, Double> tfidfCache;
+    private ImmutableMap<String, Double> tfidfCache;
 
     public ParsedDocumentMetrics(Corpus corpus, ParsedDocument document,
-                                 Map<String, DocumentPostingCollection> termsToPostings) {
+                                 ImmutableMap<String, DocumentPostingCollection> termsToPostings) {
         this.corpus = corpus;
         this.document = document;
         this.termsToPostings = termsToPostings;
-        this.tfidfCache = new HashMap<>();
+        Map<String, Double> tfm = new HashMap<>();
 
         //init tfidf cache
         for (String word : document.getUniqueWords()) {
-            tfidfCache.put(word, calcTfidf(word));
+            tfm.put(word, calcTfidf(word));
         }
+        this.tfidfCache = ImmutableMap.copyOf(tfm);
 
         //prime magnitude cache
         getMagnitude();

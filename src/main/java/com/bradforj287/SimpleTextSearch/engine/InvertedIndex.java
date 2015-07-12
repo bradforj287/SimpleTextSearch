@@ -165,7 +165,7 @@ public class InvertedIndex implements TextSearchIndex {
     private double computeCosine(ParsedDocumentMetrics searchDocMetrics, ParsedDocument d2) {
         double cosine = 0;
 
-        HashSet<String> wordSet = searchDocMetrics.getDocument().getUniqueWords();
+        Set<String> wordSet = searchDocMetrics.getDocument().getUniqueWords();
         ParsedDocument otherDocument = d2;
         if (d2.getUniqueWords().size() < wordSet.size()) {
             wordSet = d2.getUniqueWords();
