@@ -27,5 +27,5 @@ A lightweight and easy to use full text search implementation for Java. For data
 
         String searchTerm = "Mad in pursuit and in possession so";
 
-        SearchResultBatch batch = index.search(searchTerm, Integer.MAX_VALUE);
+        SearchResultBatch batch = index.search(searchTerm, 10);
 ##
