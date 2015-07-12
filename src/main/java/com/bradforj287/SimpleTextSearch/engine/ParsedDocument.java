@@ -1,6 +1,5 @@
 package com.bradforj287.SimpleTextSearch.engine;
 
-import com.bradforj287.SimpleTextSearch.Document;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -16,20 +15,20 @@ import java.util.Set;
  */
 public class ParsedDocument {
 
-    private ImmutableList<Term> terms;
-    private Document document;
+    private ImmutableList<DocumentTerm> documentTerms;
     private ImmutableMap<String, Integer> wordFrequencyMap;
     private ImmutableSet<String> uniqueWords;
+    private Object uniqueId;
 
-    public ParsedDocument(List<Term> terms, Document document) {
-        Preconditions.checkNotNull(terms);
-        Preconditions.checkNotNull(document);
-        this.terms = ImmutableList.copyOf(terms);
-        this.document = document;
+    public ParsedDocument(List<DocumentTerm> documentTerms, Object uniqueId) {
+        Preconditions.checkNotNull(uniqueId);
+        Preconditions.checkNotNull(documentTerms);
+        this.documentTerms = ImmutableList.copyOf(documentTerms);
+        this.uniqueId = uniqueId;
         HashMap<String, Integer> wordFrequency = new HashMap<>();
         uniqueWords = null;
 
-        for (Term t : terms) {
+        for (DocumentTerm t : documentTerms) {
             String word = t.getWord();
             if (!wordFrequency.containsKey(word)) {
                 wordFrequency.put(word, 0);
@@ -54,11 +53,11 @@ public class ParsedDocument {
     }
 
     public boolean isEmpty() {
-        return terms == null || terms.isEmpty();
+        return documentTerms == null || documentTerms.isEmpty();
     }
 
-    public List<Term> getTerms() {
-        return terms;
+    public List<DocumentTerm> getDocumentTerms() {
+        return documentTerms;
     }
 
     public Set<String> getUniqueWords() {
@@ -68,13 +67,13 @@ public class ParsedDocument {
     private HashSet<String> getUniqueWordsHashSet() {
 
         HashSet<String> w = new HashSet<>();
-        for (Term t : terms) {
+        for (DocumentTerm t : documentTerms) {
             w.add(t.getWord());
         }
         return w;
     }
 
-    public Document getDocument() {
-        return document;
+    public Object getUniqueId() {
+        return uniqueId;
     }
 }

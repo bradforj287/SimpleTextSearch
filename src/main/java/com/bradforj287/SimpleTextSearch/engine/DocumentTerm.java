@@ -8,12 +8,12 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 /**
  * Created by brad on 6/6/15.
  */
-public class Term {
+public class DocumentTerm {
 
     private String word;
     private int positionInDoc;
 
-    public Term(String word, int positionInDoc) {
+    public DocumentTerm(String word, int positionInDoc) {
         Preconditions.checkArgument(!StringUtils.isEmpty(word));
         this.word = word;
         this.positionInDoc = positionInDoc;
@@ -33,11 +33,11 @@ public class Term {
 
         if (o == null || getClass() != o.getClass()) return false;
 
-        Term term = (Term) o;
+        DocumentTerm documentTerm = (DocumentTerm) o;
 
         return new EqualsBuilder()
-                .append(positionInDoc, term.positionInDoc)
-                .append(word, term.word)
+                .append(positionInDoc, documentTerm.positionInDoc)
+                .append(word, documentTerm.word)
                 .isEquals();
     }
 

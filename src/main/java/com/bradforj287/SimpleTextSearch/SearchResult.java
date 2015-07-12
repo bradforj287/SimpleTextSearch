@@ -6,10 +6,14 @@ package com.bradforj287.SimpleTextSearch;
 public class SearchResult {
 
     private double relevanceScore;
-    private Document document;
+    private Object uniqueIdentifier;
 
     public Object getUniqueIdentifier() {
-        return document.getUniqueIdentifier();
+        return uniqueIdentifier;
+    }
+
+    public void setUniqueIdentifier(Object uniqueIdentifier) {
+        this.uniqueIdentifier = uniqueIdentifier;
     }
 
     public double getRelevanceScore() {
@@ -18,13 +22,5 @@ public class SearchResult {
 
     public void setRelevanceScore(double relevanceScore) {
         this.relevanceScore = relevanceScore;
-    }
-
-    public Document getDocument() {
-        return document;
-    }
-
-    public void setDocument(Document document) {
-        this.document = document;
     }
 }

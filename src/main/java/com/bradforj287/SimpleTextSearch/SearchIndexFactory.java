@@ -20,10 +20,9 @@ public class SearchIndexFactory {
 
     }
 
-    private static List<ParsedDocument> buildParsedDocuments(Collection<Document> docs) {
+    private static List<ParsedDocument> buildParsedDocuments(Collection<Document> docs, DocumentParser parser) {
         List<ParsedDocument> retVal = new ArrayList<>();
 
-        DocumentParser parser = new DocumentParser();
         for (Document doc : docs) {
             retVal.add(parser.parseDocument(doc));
         }
@@ -38,11 +37,13 @@ public class SearchIndexFactory {
 
         List<Document> docsList = new ArrayList<>(theDocs);
         List<Thread> threads = new ArrayList<>();
+
+        final DocumentParser parser = new DocumentParser(true, true);
         for (final List<Document> partition : Lists.partition(docsList, cores)) {
             Thread t = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    parsedDocuments.addAll(buildParsedDocuments(partition));
+                    parsedDocuments.addAll(buildParsedDocuments(partition, parser));
                 }
             });
             threads.add(t);

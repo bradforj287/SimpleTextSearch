@@ -4,6 +4,7 @@ import com.bradforj287.SimpleTextSearch.*;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.MinMaxPriorityQueue;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -19,23 +20,25 @@ public class InvertedIndex implements TextSearchIndex {
     private ImmutableMap<String, DocumentPostingCollection> termToPostings;
     private ImmutableMap<ParsedDocument, ParsedDocumentMetrics> docToMetrics;
     private ExecutorService executorService;
+    private DocumentParser searchTermParser;
 
     public InvertedIndex(Corpus corpus) {
         this.corpus = corpus;
         init();
         executorService = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
+        searchTermParser = new DocumentParser(false, false);
     }
 
     private void init() {
         // build term -> posting map
         Map<String, DocumentPostingCollection> termToPostingsMap = new HashMap<>();
         for (ParsedDocument document : corpus.getParsedDocuments()) {
-            for (Term term : document.getTerms()) {
-                final String word = term.getWord();
+            for (DocumentTerm documentTerm : document.getDocumentTerms()) {
+                final String word = documentTerm.getWord();
                 if (!termToPostingsMap.containsKey(word)) {
                     termToPostingsMap.put(word, new DocumentPostingCollection(word));
                 }
-                termToPostingsMap.get(word).addPosting(term, document);
+                termToPostingsMap.get(word).addPosting(documentTerm, document);
             }
         }
 
@@ -73,9 +76,7 @@ public class InvertedIndex implements TextSearchIndex {
     public SearchResultBatch search(String searchTerm, int maxResults) {
         Stopwatch stopwatch = Stopwatch.createStarted();
 
-        // figure out relevant documents to scan
-        DocumentParser parser = new DocumentParser();
-        ParsedDocument searchDocument = parser.parseDocument(new Document(searchTerm, null));
+        ParsedDocument searchDocument = searchTermParser.parseDocument(new Document(searchTerm, new Object()));
         Set<ParsedDocument> documentsToScanSet = getRelevantDocuments(searchDocument);
 
         if (searchDocument.isEmpty() || documentsToScanSet.isEmpty()) {
@@ -98,8 +99,8 @@ public class InvertedIndex implements TextSearchIndex {
                         double cosine = computeCosine(pdm, doc);
 
                         SearchResult result = new SearchResult();
-                        result.setDocument(doc.getDocument());
                         result.setRelevanceScore(cosine);
+                        result.setUniqueIdentifier(doc.getUniqueId());
                         resultsP.add(result);
                     }
                 }
@@ -116,26 +117,31 @@ public class InvertedIndex implements TextSearchIndex {
             }
         }
 
-        List<SearchResult> results = new ArrayList<>(resultsP);
+        int heapSize = Math.min(resultsP.size(), maxResults);
 
-        // sort results
-        Collections.sort(results, new Comparator<SearchResult>() {
-            @Override
-            public int compare(SearchResult o1, SearchResult o2) {
-                Double d1 = o1.getRelevanceScore();
-                Double d2 = o2.getRelevanceScore();
-                return d2.compareTo(d1);
-            }
-        });
+        MinMaxPriorityQueue<SearchResult> maxHeap = MinMaxPriorityQueue.
+                orderedBy(new Comparator<SearchResult>() {
+                    @Override
+                    public int compare(SearchResult o1, SearchResult o2) {
+                        if (o1.getRelevanceScore() <= o2.getRelevanceScore()) {
+                            return 1;
+                        } else {
+                            return -1;
+                        }
+                    }
+                }).
+                maximumSize(heapSize).
+                expectedSize(heapSize).create(resultsP);
+
 
         // return results
         ArrayList<SearchResult> r = new ArrayList<>();
-        for (int i = 0; i < maxResults && i < results.size(); i++) {
-            r.add(results.get(i));
+        while (!maxHeap.isEmpty()) {
+            SearchResult rs = maxHeap.removeFirst();
+            r.add(rs);
         }
 
         return buildResultBatch(r, stopwatch, documentsToScan.size());
-
     }
 
     private SearchResultBatch buildResultBatch(List<SearchResult> results, Stopwatch sw, int numDocumentsSearched) {
@@ -152,46 +158,6 @@ public class InvertedIndex implements TextSearchIndex {
     }
 
 
-    private SearchResultBatch computeCosineSimilarityAndReturnResults(ParsedDocument searchDocument,
-                                                                       Set<ParsedDocument> relevantDocuments,
-                                                                       int maxResults) {
-        Stopwatch stopwatch = Stopwatch.createStarted();
-
-        List<SearchResult> results = new ArrayList<>();
-
-        if (searchDocument.isEmpty() || relevantDocuments.isEmpty()) {
-            return buildResultBatch(results, stopwatch, 0);
-        }
-
-        ParsedDocumentMetrics searchDocumentMetrics = new ParsedDocumentMetrics(corpus, searchDocument, termToPostings);
-        for (ParsedDocument doc : relevantDocuments) {
-            double cosine = computeCosine(searchDocumentMetrics, doc);
-
-            SearchResult result = new SearchResult();
-            result.setDocument(doc.getDocument());
-            result.setRelevanceScore(cosine);
-            results.add(result);
-        }
-
-        Collections.sort(results, new Comparator<SearchResult>() {
-            @Override
-            public int compare(SearchResult o1, SearchResult o2) {
-                Double d1 = o1.getRelevanceScore();
-                Double d2 = o2.getRelevanceScore();
-                return d2.compareTo(d1);
-            }
-        });
-
-        ArrayList<SearchResult> r = new ArrayList<>();
-
-        for (int i = 0; i < maxResults && i < results.size(); i++) {
-            r.add(results.get(i));
-        }
-
-        return buildResultBatch(results, stopwatch, relevantDocuments.size());
-
-    }
-
     private double computeCosine(ParsedDocumentMetrics searchDocMetrics, ParsedDocument d2) {
         double cosine = 0;
 
@@ -202,11 +168,6 @@ public class InvertedIndex implements TextSearchIndex {
             otherDocument = searchDocMetrics.getDocument();
         }
         for (String word : wordSet) {
-
-            // optimization - if this is 0 then the TFIDF for d2 will be 0 and the term below is 0
-            if (otherDocument.getWordFrequency(word) == 0) {
-                continue;
-            }
 
             double term = ((searchDocMetrics.getTfidf(word)) / searchDocMetrics.getMagnitude()) *
                     ( (docToMetrics.get(d2).getTfidf(word)) / docToMetrics.get(d2).getMagnitude());

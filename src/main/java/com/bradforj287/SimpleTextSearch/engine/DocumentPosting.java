@@ -5,15 +5,15 @@ package com.bradforj287.SimpleTextSearch.engine;
  */
 public class DocumentPosting {
 
-    private Term term;
+    private DocumentTerm documentTerm;
     private ParsedDocument parsedDocument;
-    public DocumentPosting(Term term, ParsedDocument document) {
-        this.term = term;
+    public DocumentPosting(DocumentTerm documentTerm, ParsedDocument document) {
+        this.documentTerm = documentTerm;
         this.parsedDocument = document;
     }
 
-    public Term getTerm() {
-        return term;
+    public DocumentTerm getDocumentTerm() {
+        return documentTerm;
     }
 
     public ParsedDocument getParsedDocument() {

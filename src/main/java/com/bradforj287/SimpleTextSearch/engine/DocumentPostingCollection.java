@@ -19,8 +19,8 @@ public class DocumentPostingCollection {
         this.uniqueDocuments = new HashSet<>();
     }
 
-    public void addPosting(Term term, ParsedDocument doc) {
-        postings.add(new DocumentPosting(term, doc));
+    public void addPosting(DocumentTerm documentTerm, ParsedDocument doc) {
+        postings.add(new DocumentPosting(documentTerm, doc));
         uniqueDocuments.add(doc);
     }
 

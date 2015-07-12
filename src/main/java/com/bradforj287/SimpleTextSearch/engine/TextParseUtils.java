@@ -36,8 +36,20 @@ public class TextParseUtils {
                 new CoreLabelTokenFactory(), "");
         while (ptbt.hasNext()) {
             CoreLabel label = ptbt.next();
-            retVal.add(label.toString());
+            String str = label.toString();
+            if (str == null) {
+                continue;
+            }
+
+            str = str.replaceAll("[^a-zA-Z ]", "");
+
+            if (str.isEmpty()) {
+                continue;
+            }
+
+            retVal.add(str);
         }
+
 
         return retVal;
     }

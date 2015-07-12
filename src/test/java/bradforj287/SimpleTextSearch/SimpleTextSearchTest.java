@@ -25,7 +25,7 @@ public class SimpleTextSearchTest {
                 "And every fair from fair sometime declines,\n" +
                 "By chance or nature's changing course untrimm'd;\n" +
                 "But thy eternal summer shall not fade\n" +
-                "Nor lose possession of that fair thou owest;\n" +
+                "Nor lose possession  possession of that fair thou owest;\n" +
                 "Nor shall Death brag thou wander'st in his shade,\n" +
                 "When in eternal lines to time thou growest: \n" +
                 "So long as men can breathe or eyes can see,\n" +
@@ -38,7 +38,7 @@ public class SimpleTextSearchTest {
                 "O no! it is an ever-fixed mark \n" +
                 "That looks on tempests and is never shaken;\n" +
                 "It is the star to every wandering bark,\n" +
-                "Whose worth's unknown, although his height be taken.\n" +
+                "Whose worth's unknown, possession although his height be taken.\n" +
                 "Love's not Time's fool, though rosy lips and cheeks \n" +
                 "Within his bending sickle's compass come: \n" +
                 "Love alters not with his brief hours and weeks, \n" +
@@ -51,7 +51,7 @@ public class SimpleTextSearchTest {
                 "If snow be white, why then her breasts are dun;\n" +
                 "If hairs be wires, black wires grow on her head.\n" +
                 "I have seen roses damask'd, red and white,\n" +
-                "But no such roses see I in her cheeks; \n" +
+                "But no such roses see I possession in her cheeks; \n" +
                 "And in some perfumes is there more delight\n" +
                 "Than in the breath that from my mistress reeks.\n" +
                 "I love to hear her speak, yet well I know\n" +
@@ -69,7 +69,7 @@ public class SimpleTextSearchTest {
                 "Past reason hunted, and no sooner had\n" +
                 "Past reason hated, as a swallow'd bait\n" +
                 "On purpose laid to make the taker mad;\n" +
-                "Mad in pursuit and in possession so;\n" +
+                "Mad in pursuit and in possession possession so;\n" +
                 "Had, having, and in quest to have, extreme;\n" +
                 "A bliss in proof, and proved, a very woe;\n" +
                 "Before, a joy proposed; behind, a dream.\n" +
@@ -89,7 +89,19 @@ public class SimpleTextSearchTest {
         SearchResultBatch batch = index.search(searchTerm, Integer.MAX_VALUE);
         List<SearchResult> results = batch.getSearchResults();
 
+        // verify correct top result
         assert(results.get(0).getUniqueIdentifier().equals(4));
+
+        boolean outOfOrder = false;
+        for (int i = 0; i < results.size(); i++) {
+            int next = i + 1;
+            boolean hasNext = next < results.size();
+            if (hasNext && ( results.get(next).getRelevanceScore() > results.get(i).getRelevanceScore() )) {
+                outOfOrder = true;
+            }
+        }
+
+        assert(outOfOrder == false);
 
         for (SearchResult result : results) {
             System.out.println(result.getUniqueIdentifier() + " " + result.getRelevanceScore());
