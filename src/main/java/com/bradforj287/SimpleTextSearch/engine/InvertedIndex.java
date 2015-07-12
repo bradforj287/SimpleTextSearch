@@ -3,22 +3,27 @@ package com.bradforj287.SimpleTextSearch.engine;
 import com.bradforj287.SimpleTextSearch.*;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 
 import java.util.*;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * Created by brad on 6/6/15.
  */
 public class InvertedIndex implements TextSearchIndex {
 
+    private static int THREAD_POOL_SIZE = Math.max(1, Runtime.getRuntime().availableProcessors());
+
     private Corpus corpus;
     private ImmutableMap<String, DocumentPostingCollection> termToPostings;
     private ImmutableMap<ParsedDocument, ParsedDocumentMetrics> docToMetrics;
+    private ExecutorService executorService;
 
     public InvertedIndex(Corpus corpus) {
         this.corpus = corpus;
         init();
+        executorService = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
     }
 
     private void init() {
@@ -71,22 +76,47 @@ public class InvertedIndex implements TextSearchIndex {
         // figure out relevant documents to scan
         DocumentParser parser = new DocumentParser();
         ParsedDocument searchDocument = parser.parseDocument(new Document(searchTerm, null));
-        Set<ParsedDocument> documentsToScan = getRelevantDocuments(searchDocument);
+        Set<ParsedDocument> documentsToScanSet = getRelevantDocuments(searchDocument);
+
+        if (searchDocument.isEmpty() || documentsToScanSet.isEmpty()) {
+            return buildResultBatch(new ArrayList<SearchResult>(), stopwatch, 0);
+        }
 
         // do scan
-        List<SearchResult> results = new ArrayList<>();
-        if (searchDocument.isEmpty() || documentsToScan.isEmpty()) {
-            return buildResultBatch(results, stopwatch, 0);
-        }
-        ParsedDocumentMetrics pdm = new ParsedDocumentMetrics(corpus, searchDocument, termToPostings);
-        for (ParsedDocument doc : documentsToScan) {
-            double cosine = computeCosine(pdm, doc);
+        final Collection<SearchResult> resultsP = new ConcurrentLinkedQueue<>();
 
-            SearchResult result = new SearchResult();
-            result.setDocument(doc.getDocument());
-            result.setRelevanceScore(cosine);
-            results.add(result);
+        List<ParsedDocument> documentsToScan = new ArrayList<>(documentsToScanSet);
+        final ParsedDocumentMetrics pdm = new ParsedDocumentMetrics(corpus, searchDocument, termToPostings);
+        List<Future> futures = new ArrayList<>();
+
+        for (final List<ParsedDocument> partition : Lists.partition(documentsToScan, THREAD_POOL_SIZE)) {
+
+            Future future = executorService.submit(new Runnable() {
+                @Override
+                public void run() {
+                    for (ParsedDocument doc : partition) {
+                        double cosine = computeCosine(pdm, doc);
+
+                        SearchResult result = new SearchResult();
+                        result.setDocument(doc.getDocument());
+                        result.setRelevanceScore(cosine);
+                        resultsP.add(result);
+                    }
+                }
+            });
+
+            futures.add(future);
         }
+
+        for (Future f : futures) {
+            try {
+                f.get();
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
+            }
+        }
+
+        List<SearchResult> results = new ArrayList<>(resultsP);
 
         // sort results
         Collections.sort(results, new Comparator<SearchResult>() {
@@ -104,7 +134,7 @@ public class InvertedIndex implements TextSearchIndex {
             r.add(results.get(i));
         }
 
-        return buildResultBatch(results, stopwatch, documentsToScan.size());
+        return buildResultBatch(r, stopwatch, documentsToScan.size());
 
     }
 
