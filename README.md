@@ -9,6 +9,7 @@ A lightweight and easy to use full text search implementation for Java. For data
 * Only freeform text searches are supported. No advanced search operators.
 
 ###Key Features:
+* Inverted Index
 * Cosine Similarity algorithm w/ TFIDF ranking
 * MultiThreadded index creation and searching
 * Word Stemming (snowball stemmer)
