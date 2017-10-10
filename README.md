@@ -30,3 +30,6 @@ A lightweight and easy to use full text search implementation for Java. For data
 
         SearchResultBatch batch = index.search(searchTerm, 10);
 ##
+
+# License
+the license specified in LICENSE.txt (MIT) applies to all files in this repository.  
