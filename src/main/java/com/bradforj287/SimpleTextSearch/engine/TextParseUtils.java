@@ -22,6 +22,7 @@ public class TextParseUtils {
     public static String stemWord(String word) {
         englishStemmer stemmer = new englishStemmer();
         stemmer.setCurrent(word);
+        stemmer.stem();
         return stemmer.getCurrent();
     }
 
