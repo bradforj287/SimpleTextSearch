@@ -16,6 +16,7 @@ public class DocumentParser {
     private ConcurrentHashMap<String, String> stringPool;
     private boolean useStringPool;
     private boolean parseHtml;
+    TextParseUtils parseUtils = new TextParseUtils();
 
     public DocumentParser(boolean useStringPool, boolean parseHtml) {
         this.useStringPool = useStringPool;
@@ -52,7 +53,7 @@ public class DocumentParser {
         text = text.toLowerCase();
 
         // iterate over parsed terms
-        List<String> terms = TextParseUtils.tokenize(text);
+        List<String> terms = parseUtils.tokenize(text);
 
         List<DocumentTerm> retVal = new ArrayList<>();
         int pos = 0;
