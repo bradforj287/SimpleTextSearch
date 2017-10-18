@@ -1,55 +1,59 @@
 package com.bradforj287.SimpleTextSearch.engine;
 
-import edu.stanford.nlp.ling.CoreLabel;
-import edu.stanford.nlp.process.CoreLabelTokenFactory;
-import edu.stanford.nlp.process.PTBTokenizer;
+import java.io.IOException;
 import org.apache.commons.lang3.StringUtils;
-import org.tartarus.snowball.ext.englishStemmer;
+import org.tartarus.snowball.ext.EnglishStemmer;
 
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 /**
  * Created by brad on 6/6/15.
  */
 public class TextParseUtils {
+    Analyzer analyzer = new StandardAnalyzer();
 
-    private TextParseUtils() {
-
+    TextParseUtils() {
     }
 
     public static String stemWord(String word) {
-        englishStemmer stemmer = new englishStemmer();
+        EnglishStemmer stemmer = new EnglishStemmer();
         stemmer.setCurrent(word);
         stemmer.stem();
         return stemmer.getCurrent();
     }
 
-    public static List<String> tokenize(String rawText) {
+    public List<String> tokenize(String rawText) {
 
         List<String> retVal = new ArrayList<>();
         if (StringUtils.isEmpty(rawText)) {
             return retVal;
         }
 
-        PTBTokenizer<CoreLabel> ptbt = new PTBTokenizer<>(new StringReader(rawText),
-                new CoreLabelTokenFactory(), "");
-        while (ptbt.hasNext()) {
-            CoreLabel label = ptbt.next();
-            String str = label.toString();
-            if (str == null) {
-                continue;
+        try (TokenStream ts = analyzer.tokenStream(null,rawText)) {
+            CharTermAttribute term = ts.getAttribute(CharTermAttribute.class);
+            ts.reset();
+            while (ts.incrementToken()) {
+                String str = term.toString();
+                if (str == null) {
+                    continue;
+                }
+
+                str = str.replaceAll("[^a-zA-Z ]", "");
+
+                if (str.isEmpty()) {
+                    continue;
+                }
+
+                retVal.add(str);
             }
-
-            str = str.replaceAll("[^a-zA-Z ]", "");
-
-            if (str.isEmpty()) {
-                continue;
-            }
-
-            retVal.add(str);
+            ts.end();
         }
+        catch (IOException ex) {}
 
 
         return retVal;
